@@ -1,0 +1,90 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <cctype>
+
+// Часоти літер в англійській мові
+const std::map<char, double> ENGLISH_FREQUENCIES = {
+    {'A', 8.08}, {'B', 1.67}, {'C', 3.18}, {'D', 3.99}, {'E', 12.56}, {'F', 2.17},
+    {'G', 1.80}, {'H', 5.27}, {'I', 7.24}, {'J', 0.14}, {'K', 0.63}, {'L', 4.04},
+    {'M', 2.60}, {'N', 7.38}, {'O', 7.47}, {'P', 1.91}, {'Q', 0.09}, {'R', 6.42},
+    {'S', 6.59}, {'T', 9.15}, {'U', 2.79}, {'V', 1.00}, {'W', 1.89}, {'X', 0.21},
+    {'Y', 1.65}, {'Z', 0.07}
+};
+
+// для підрахунку частоти літер у тексті
+std::map<char, double> calculateFrequencies(const std::string &text) {
+    std::map<char, int> counts;
+    int totalLetters = 0;
+
+    for (char c : text) {
+        if (std::isalpha(c)) {
+            char upperChar = std::toupper(c);
+            counts[upperChar]++;
+            totalLetters++;
+        }
+    }
+
+    std::map<char, double> frequencies;
+    for (const auto &[letter, count] : counts) {
+        frequencies[letter] = (static_cast<double>(count) / totalLetters) * 100;
+    }
+
+    return frequencies;
+}
+
+// зсув
+int findShift(const std::string &ciphertext) {
+    auto frequencies = calculateFrequencies(ciphertext);
+    double minDifference = std::numeric_limits<double>::max();
+    int bestShift = 0;
+
+    for (int shift = 0; shift < 26; ++shift) {
+        double totalDifference = 0;
+
+        for (const auto &[letter, expectedFreq] : ENGLISH_FREQUENCIES) {
+            char shiftedLetter = ((letter - 'A' + shift) % 26) + 'A';
+            double actualFreq = frequencies.count(shiftedLetter) ? frequencies[shiftedLetter] : 0.0;
+            totalDifference += std::abs(actualFreq - expectedFreq);
+        }
+
+        if (totalDifference < minDifference) {
+            minDifference = totalDifference;
+            bestShift = shift;
+        }
+    }
+
+    return bestShift;
+}
+
+//розшифровкф
+std::string decrypt(const std::string &ciphertext, int shift) {
+    std::string plaintext;
+
+    for (char c : ciphertext) {
+        if (std::isalpha(c)) {
+            char base = std::isupper(c) ? 'A' : 'a';
+            plaintext += (c - base - shift + 26) % 26 + base;
+        } else {
+            plaintext += c; 
+        }
+    }
+
+    return plaintext;
+}
+
+int main() {
+    std::string ciphertext;
+    std::cout << "Enter the ciphertext: ";
+    std::getline(std::cin, ciphertext);
+
+    int shift = findShift(ciphertext);
+    std::string plaintext = decrypt(ciphertext, shift);
+
+    std::cout << "Decrypted message: " << plaintext << std::endl;
+    std::cout << "Detected shift: " << shift << std::endl;
+
+    return 0;
+}
